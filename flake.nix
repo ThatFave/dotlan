@@ -17,12 +17,12 @@
     nixosConfigurations.dotlan = nixpkgs.lib.nixosSystem {
       system = "x86_64-linux";
       modules = [
-        ({ pkgs, ... }: {
+        ({ config, pkgs, ... }: {  # Added config to module arguments
           # Basic system configuration
           system.stateVersion = "23.11";
           networking.hostName = "dotlan";
 
-          # Boot configuration (example values - adjust for your hardware)
+          # Boot configuration (example values)
           boot.loader.grub = {
             enable = true;
             device = "/dev/sda";
@@ -38,12 +38,6 @@
           services.mysql = {
             enable = true;
             package = (import mysql-nixpkgs { inherit (pkgs) system; }).mysql;
-            settings = {
-              mysqld = {
-                innodb_buffer_pool_size = "256M";
-                key_buffer_size = "128M";
-              };
-            };
           };
 
           # PHP-FPM configuration
@@ -51,18 +45,11 @@
             user = "phpuser";
             group = "phpgroup";
             phpPackage = (import php-nixpkgs { inherit (pkgs) system; }).php;
-            phpOptions = ''
-              extension = mysqli.so
-              extension = pdo_mysql.so
-            '';
             settings = {
               "listen.owner" = "nginx";
               "listen.group" = "nginx";
               "pm" = "dynamic";
               "pm.max_children" = 5;
-              "pm.start_servers" = 2;
-              "pm.min_spare_servers" = 1;
-              "pm.max_spare_servers" = 3;
             };
           };
 
@@ -93,10 +80,10 @@
             "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIC0P7n8nCfFc79DDIEQfVzRZ+zaX3L9F8NRqsXoirdWL Main"
           ];
 
-          # Tailscale (not activated)
+          # Tailscale
           services.tailscale.enable = true;
 
-          # Optional: Nginx configuration
+          # Corrected Nginx configuration using config
           services.nginx = {
             enable = true;
             virtualHosts."default" = {
