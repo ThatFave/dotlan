@@ -16,13 +16,16 @@ jobs:
     uploadStrategy: UPLOAD_IF_NOT_HIT
     condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
   - !CommandStep
-    name: use nix shell to check the flake
+    name: check flake
     runInContainer: true
     image: nixos/nix:latest
     interpreter: !ShellInterpreter
       shell: /root/.nix-profile/bin/bash
       commands: |
-        nix-shell -p git && nix flake check
+        # Activate nix profile and install dependencies
+        . /etc/profile
+        nix-env -iA nixpkgs.git nixpkgs.coreutils
+        nix flake check
     useTTY: true
     condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
   triggers:
