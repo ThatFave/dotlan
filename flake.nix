@@ -19,7 +19,7 @@
       modules = [
         ({ config, pkgs, ... }: {  # Added config to module arguments
           # Basic system configuration
-          system.stateVersion = "23.11";
+          system.stateVersion = "25.05";
           networking.hostName = "dotlan";
 
           # Boot configuration (example values)
