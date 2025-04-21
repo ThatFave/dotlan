@@ -35,6 +35,7 @@
           system.stateVersion = "24.11";
           networking.hostName = "dotlan";
           i18n.defaultLocale = "en_US.UTF-8";
+          nix.settings.experimental-features = [ "nix-command" "flakes" ];
 
           # Boot configuration
           boot.loader = {
