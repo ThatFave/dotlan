@@ -1,18 +1,39 @@
-version: 1
-
+version: 39
 jobs:
-  - name: validate-flake
+- name: validate-flake
+  steps:
+  - !CheckoutStep
+    name: checkout repo
+    cloneCredential: !DefaultCredential {}
+    withLfs: false
+    withSubmodules: false
+    condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
+  - !SetupCacheStep
+    name: nix-cache
+    key: nix-cache
+    paths:
+    - /nix/store
+    uploadStrategy: UPLOAD_IF_NOT_HIT
+    condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
+  - !CommandStep
+    name: install git
+    runInContainer: true
     image: nixos/nix:latest
-
-    caches:
-      - key: nix-store
-        path: /nix/store
-
-    steps:
-      - name: Install git (required by flakes)
-        commands:
-          - apt-get update && apt-get install -y git
-
-      - name: Validate flake.nix
-        commands:
-          - nix flake check
+    interpreter: !DefaultInterpreter
+      commands: |
+        apt-get update && apt-get install -y git
+    useTTY: true
+    condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
+  - !CommandStep
+    name: check flake
+    runInContainer: true
+    image: nixos/nix:latest
+    interpreter: !DefaultInterpreter
+      commands: |
+        nix flake check
+    useTTY: true
+    condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
+  retryCondition: never
+  maxRetries: 3
+  retryDelay: 30
+  timeout: 14400
