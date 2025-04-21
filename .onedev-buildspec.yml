@@ -19,7 +19,8 @@ jobs:
     name: use nix shell to check the flake
     runInContainer: true
     image: nixos/nix:latest
-    interpreter: /root/.nix-profile/bin/bash
+    interpreter: !ShellInterpreter
+      shell: /root/.nix-profile/bin/bash
       commands: |
         nix-shell -p git && nix flake check
     useTTY: true
