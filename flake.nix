@@ -55,10 +55,6 @@
           # PHP configuration
           services.phpfpm.pools."php56" = {
             phpPackage = (import php-nixpkgs { inherit (pkgs) system; }).php;
-            settings = {
-              "listen.owner" = "nginx";
-              "listen.group" = "nginx";
-            };
           };
 
           # SSH configuration
