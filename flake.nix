@@ -1,5 +1,5 @@
 {
-  description = "Server configuration with MySQL 8.0.34, PHP 5.6.36, and Tailscale";
+  description = "NixOS configuration for dotlan server with MySQL 8.0.34 and PHP 5.6.36";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -18,48 +18,68 @@
       system = "x86_64-linux";
       modules = [
         ({ pkgs, ... }: {
-          # Essential system configuration
-          system.stateVersion = "23.11";  # Set to your desired version
+          # Basic system configuration
+          system.stateVersion = "23.11";
+          networking.hostName = "dotlan";
 
-          # Bootloader configuration (adjust devices accordingly)
+          # Boot configuration (example values - adjust for your hardware)
           boot.loader.grub = {
             enable = true;
-            device = "/dev/sda";  # Change to your actual disk device
+            device = "/dev/sda";
           };
 
-          # Filesystem configuration (minimal example)
+          # Filesystem configuration (example values)
           fileSystems."/" = {
             device = "/dev/disk/by-label/nixos";
             fsType = "ext4";
           };
 
-          # Hostname
-          networking.hostName = "dotlan";
-
-          # Package configuration
-          environment.systemPackages = let
-            mysqlPkgs = import mysql-nixpkgs { inherit (pkgs) system; };
-            phpPkgs = import php-nixpkgs { inherit (pkgs) system; };
-          in [
-            mysqlPkgs.mysql
-            phpPkgs.php
-            pkgs.tailscale
-          ];
-
-          # MySQL service
+          # MySQL configuration
           services.mysql = {
             enable = true;
             package = (import mysql-nixpkgs { inherit (pkgs) system; }).mysql;
+            settings = {
+              mysqld = {
+                innodb_buffer_pool_size = "256M";
+                key_buffer_size = "128M";
+              };
+            };
           };
 
-          # PHP configuration
+          # PHP-FPM configuration
           services.phpfpm.pools."php56" = {
+            user = "phpuser";
+            group = "phpgroup";
             phpPackage = (import php-nixpkgs { inherit (pkgs) system; }).php;
+            phpOptions = ''
+              extension = mysqli.so
+              extension = pdo_mysql.so
+            '';
             settings = {
               "listen.owner" = "nginx";
               "listen.group" = "nginx";
+              "pm" = "dynamic";
+              "pm.max_children" = 5;
+              "pm.start_servers" = 2;
+              "pm.min_spare_servers" = 1;
+              "pm.max_spare_servers" = 3;
             };
           };
+
+          # PHP user/group
+          users.users.phpuser = {
+            isSystemUser = true;
+            group = "phpgroup";
+          };
+          users.groups.phpgroup = {};
+
+          # System packages
+          environment.systemPackages = [
+            (import mysql-nixpkgs { inherit (pkgs) system; }).mysql
+            (import php-nixpkgs { inherit (pkgs) system; }).php
+            pkgs.tailscale
+            pkgs.nginx
+          ];
 
           # SSH configuration
           services.openssh = {
@@ -69,13 +89,30 @@
               PermitRootLogin = "prohibit-password";
             };
           };
-
           users.users.root.openssh.authorizedKeys.keys = [
             "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIC0P7n8nCfFc79DDIEQfVzRZ+zaX3L9F8NRqsXoirdWL Main"
           ];
 
-          # Tailscale
+          # Tailscale (not activated)
           services.tailscale.enable = true;
+
+          # Optional: Nginx configuration
+          services.nginx = {
+            enable = true;
+            virtualHosts."default" = {
+              locations."/" = {
+                root = "/var/www/html";
+                index = "index.php index.html";
+              };
+              locations."~ \.php$" = {
+                extraConfig = ''
+                  fastcgi_pass unix:${config.services.phpfpm.pools.php56.socket};
+                  fastcgi_index index.php;
+                  include ${pkgs.nginx}/conf/fastcgi_params;
+                '';
+              };
+            };
+          };
         })
       ];
     };
