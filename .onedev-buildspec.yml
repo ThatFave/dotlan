@@ -16,21 +16,12 @@ jobs:
     uploadStrategy: UPLOAD_IF_NOT_HIT
     condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
   - !CommandStep
-    name: install git
+    name: use nix shell to check the flake
     runInContainer: true
     image: nixos/nix:latest
-    interpreter: !DefaultInterpreter
+    interpreter: /root/.nix-profile/bin/bash
       commands: |
-        apt-get update && apt-get install -y git
-    useTTY: true
-    condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
-  - !CommandStep
-    name: check flake
-    runInContainer: true
-    image: nixos/nix:latest
-    interpreter: !DefaultInterpreter
-      commands: |
-        nix flake check
+        nix-shell -p git && nix flake check
     useTTY: true
     condition: ALL_PREVIOUS_STEPS_WERE_SUCCESSFUL
   triggers:
