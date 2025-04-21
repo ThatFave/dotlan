@@ -47,26 +47,6 @@
             package = (import mysql-nixpkgs { inherit (pkgs) system; }).mysql;
           };
 
-          # PHP-FPM configuration
-          services.phpfpm.pools."php56" = {
-            user = "phpuser";
-            group = "phpgroup";
-            phpPackage = (import php-nixpkgs { inherit (pkgs) system; }).php;
-            settings = {
-            #   "listen.owner" = "nginx";
-            #   "listen.group" = "nginx";
-              "pm" = "dynamic";
-              "pm.max_children" = 5;
-            };
-          };
-
-          # PHP user/group
-          users.users.phpuser = {
-            isSystemUser = true;
-            group = "phpgroup";
-          };
-          users.groups.phpgroup = {};
-
           # System packages
           environment.systemPackages = [
             (import mysql-nixpkgs { inherit (pkgs) system; }).mysql
