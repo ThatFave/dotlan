@@ -2,7 +2,7 @@
   description = "NixOS configuration for dotlan server with MySQL 8.0.34 and PHP 5.6.36";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-25.05";
     mysql-nixpkgs = {
       url = "github:NixOS/nixpkgs/9957cd48326fe8dbd52fdc50dd2502307f188b0d";
       flake = false;
