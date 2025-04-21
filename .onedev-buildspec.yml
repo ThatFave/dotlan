@@ -3,21 +3,16 @@ version: 1
 jobs:
   - name: validate-flake
     image: nixos/nix:latest
+
     caches:
       - key: nix-store
-        path: /nix
+        path: /nix/store
 
     steps:
       - name: Install git (required by flakes)
         commands:
           - apt-get update && apt-get install -y git
 
-      - name: Configure Nix
-        commands:
-          - mkdir -p /etc/nix
-          - echo "experimental-features = nix-command flakes" >> /etc/nix/nix.conf
-          - echo "build-users-group =" >> /etc/nix/nix.conf
-
-      - name: Validate flake
+      - name: Validate flake.nix
         commands:
           - nix flake check
