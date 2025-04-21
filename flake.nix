@@ -17,40 +17,47 @@
     nixosConfigurations.dotlan = nixpkgs.lib.nixosSystem {
       system = "x86_64-linux";
       modules = [
-        ({ config, pkgs, ... }: {  # Added config to module arguments
+        ({ config, pkgs, ... }: let
+          # Create custom package sets from pinned revisions
+          mysqlPkgs = import mysql-nixpkgs {
+            inherit (pkgs) system;
+            config.allowUnfree = true;
+          };
+
+          phpPkgs = import php-nixpkgs {
+            inherit (pkgs) system;
+            config.php = {
+              mysqlnd = true;
+            };
+          };
+        in {
           # Basic system configuration
           system.stateVersion = "24.11";
           networking.hostName = "dotlan";
           i18n.defaultLocale = "en_US.UTF-8";
 
-          # Boot configuration (example values)
+          # Boot configuration
           boot.loader = {
             efi = {
-                canTouchEfiVariables = true;
-                efiSysMountPoint = "/boot/efi";
+              canTouchEfiVariables = true;
+              efiSysMountPoint = "/boot/efi";
             };
             grub = {
-                efiSupport = true;
-                device = "nodev";
+              efiSupport = true;
+              device = "nodev";
             };
           };
 
-          # Filesystem configuration (example values)
+          # Filesystem configuration
           fileSystems."/" = {
             device = "/dev/disk/by-label/nixos";
             fsType = "ext4";
           };
 
-          # MySQL configuration
-          services.mysql = {
-            enable = true;
-            package = (import mysql-nixpkgs { inherit (pkgs) system; }).mysql;
-          };
-
           # System packages
           environment.systemPackages = [
-            (import mysql-nixpkgs { inherit (pkgs) system; }).mysql
-            (import php-nixpkgs { inherit (pkgs) system; }).php
+            mysqlPkgs.mysql
+            phpPkgs.php
             pkgs.tailscale
           ];
 
@@ -68,6 +75,13 @@
 
           # Tailscale
           services.tailscale.enable = true;
+
+          nixpkgs.overlays = [
+            (final: prev: {
+              mysql = mysqlPkgs.mysql;
+              php = phpPkgs.php;
+            })
+          ];
         })
       ];
     };
