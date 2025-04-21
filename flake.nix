@@ -19,13 +19,20 @@
       modules = [
         ({ config, pkgs, ... }: {  # Added config to module arguments
           # Basic system configuration
-          system.stateVersion = "23.11";
+          system.stateVersion = "24.11";
           networking.hostName = "dotlan";
+          i18n.defaultLocale = "en_US.UTF-8";
 
           # Boot configuration (example values)
-          boot.loader.grub = {
-            enable = true;
-            device = "/dev/sda";
+          boot.loader = {
+            efi = {
+                canTouchEfiVariables = true;
+                efiSysMountPoint = "/boot/efi";
+            };
+            grub = {
+                efiSupport = true;
+                device = "nodev";
+            };
           };
 
           # Filesystem configuration (example values)
@@ -46,8 +53,8 @@
             group = "phpgroup";
             phpPackage = (import php-nixpkgs { inherit (pkgs) system; }).php;
             settings = {
-              "listen.owner" = "nginx";
-              "listen.group" = "nginx";
+            #   "listen.owner" = "nginx";
+            #   "listen.group" = "nginx";
               "pm" = "dynamic";
               "pm.max_children" = 5;
             };
@@ -65,7 +72,6 @@
             (import mysql-nixpkgs { inherit (pkgs) system; }).mysql
             (import php-nixpkgs { inherit (pkgs) system; }).php
             pkgs.tailscale
-            pkgs.nginx
           ];
 
           # SSH configuration
@@ -82,24 +88,6 @@
 
           # Tailscale
           services.tailscale.enable = true;
-
-          # Corrected Nginx configuration using config
-          services.nginx = {
-            enable = true;
-            virtualHosts."default" = {
-              locations."/" = {
-                root = "/var/www/html";
-                index = "index.php index.html";
-              };
-              locations."~ \.php$" = {
-                extraConfig = ''
-                  fastcgi_pass unix:${config.services.phpfpm.pools.php56.socket};
-                  fastcgi_index index.php;
-                  include ${pkgs.nginx}/conf/fastcgi_params;
-                '';
-              };
-            };
-          };
         })
       ];
     };
